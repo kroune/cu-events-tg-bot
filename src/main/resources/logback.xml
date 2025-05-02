@@ -1,0 +1,32 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <batchMaxItems>1000</batchMaxItems>
+        <batchTimeoutMs>10000</batchTimeoutMs>
+        <http>
+            <url>http://loki-service.loki.svc.cluster.local:3100/loki/api/v1/push</url>
+            <requestTimeoutMs>10000</requestTimeoutMs>
+        </http>
+        <format>
+            <label>
+                <pattern>app=my-app,host=${HOSTNAME}</pattern>
+            </label>
+            <message class="com.github.loki4j.logback.JsonLayout" />
+        </format>
+    </appender>
+    <logger name="Exposed" level="info" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <root level="all">
+        <appender-ref ref="LOKI" />
+    </root>
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+    <logger name="org.eclipse.jetty" level="INFO"/>
+    <logger name="io.netty" level="INFO"/>
+</configuration>
