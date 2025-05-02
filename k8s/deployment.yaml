@@ -19,11 +19,11 @@ spec:
     spec:
       containers:
       - name: game-container
-        image: kroune/nine-mens-morris-server:v0.0.9
+        image: kroune/cu-events-bot:main
         imagePullPolicy: "Always"
         volumeMounts:
           - name: config-volume
-            mountPath: /etc/game-server/
+            mountPath: /etc/cu-events-bot/
         livenessProbe:
           httpGet:
             path: /healthz
@@ -33,4 +33,4 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: server-game-config.json
+            name: cu-events-bot-config.json
