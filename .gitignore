@@ -1,4 +1,5 @@
 .idea
+.k8s
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
