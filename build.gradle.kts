@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.ktor.server.core.jvm)
     implementation(libs.ktor.server.auth)
 
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+
     // micrometer
     implementation("io.ktor:ktor-server-metrics-micrometer:3.0.0")
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.3")

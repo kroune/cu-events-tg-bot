@@ -11,11 +11,18 @@ import io.ktor.http.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class EventsRemoteRepository : KoinComponent {
     private val url = URLBuilder(
@@ -24,7 +31,13 @@ class EventsRemoteRepository : KoinComponent {
         pathSegments = listOf("api", "event-builder", "public", "events", "list")
     ).build()
 
+    @OptIn(ExperimentalTime::class)
     suspend fun getEvents(): Result<Response> {
+        val moscowTimeZone: TimeZone = TimeZone.Companion.of("Europe/Moscow")
+        val instant: Instant = Clock.System.now()
+        val date: LocalDateTime = instant.toLocalDateTime(timeZone = moscowTimeZone)
+        println(date.format(LocalDateTime.Formats.ISO))
+
         return runCatching {
             val client by inject<HttpClient>()
             val config by inject<ConfigurationLoader.ConfigMember>()
