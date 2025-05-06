@@ -1,6 +1,8 @@
 package data.remote.events
 
+import ADMIN_USER_ID
 import ConfigurationLoader
+import data.remote.alerts.AlertsRemoteRepository
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -46,10 +48,23 @@ class EventsRemoteRepository : KoinComponent {
         delay: Duration = 5.seconds
     ): Flow<Response> {
         return flow {
+            val alertsRemoteRepository by inject<AlertsRemoteRepository>()
             while (true) {
-                getEvents().onSuccess {
-                    emit(it)
-                }
+                getEvents().fold(
+                    onSuccess = {
+                        emit(it)
+                    },
+                    onFailure = {
+                        alertsRemoteRepository.alert(
+                            ADMIN_USER_ID,
+                            "произошла ошибка при запросе данных"
+                        )
+                        alertsRemoteRepository.alert(
+                            ADMIN_USER_ID,
+                            it.stackTraceToString()
+                        )
+                    }
+                )
                 delay(delay)
             }
         }

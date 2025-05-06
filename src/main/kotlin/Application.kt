@@ -65,6 +65,29 @@ fun main() {
                                 appendLine()
                                 appendLine(event.shortTitle)
                                 appendLine("https://my.centraluniversity.ru/events/${event.slug}")
+                                appendLine(event.summary)
+                                appendLine(
+                                    when (event.offlineTicketLimit) {
+                                        null -> {
+                                            "колличество билетов не ограниченно"
+                                        }
+                                        else -> {
+                                            "всего билетов - ${event.offlineTicketLimit}"
+                                        }
+                                    }
+                                )
+
+                                appendLine(
+                                    when (event.eventTicketRegistration.isPossibleToRegister) {
+                                        true -> {
+                                            "вы еще можете зарегестрироваться"
+                                        }
+
+                                        false -> {
+                                            "к сожалению регистрация не доступна"
+                                        }
+                                    }
+                                )
                             }
                         }
                         alertsRemoteRepository.alert(
