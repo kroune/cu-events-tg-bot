@@ -11,6 +11,7 @@ import eu.vendeli.tgbot.api.message.sendMessage
 import eu.vendeli.tgbot.types.User
 import inject
 import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
@@ -52,7 +53,7 @@ suspend fun disable(user: User, bot: TelegramBot) {
 suspend fun events(user: User, bot: TelegramBot) {
     val eventsRemoteRepository by inject<EventsRemoteRepository>()
     val event = withTimeoutOrNull(10.seconds) {
-        eventsRemoteRepository.listenForEvents(0.seconds).single()
+        eventsRemoteRepository.listenForEvents(0.seconds).take(1).single()
     }?.items?.firstOrNull()
     if (event == null) {
         val alertsRemoteRepository by inject<AlertsRemoteRepository>()

@@ -7,7 +7,16 @@ class EventsTextBuilderController {
         return buildString {
             appendLine(event.shortTitle)
             appendLine("https://my.centraluniversity.ru/events/${event.slug}")
-            appendLine(event.summary)
+            appendLine(
+                when (event.summary) {
+                    null -> {
+                        "описание отсутствует"
+                    }
+                    else -> {
+                        event.summary
+                    }
+                }
+            )
             appendLine(
                 when (event.offlineTicketLimit) {
                     null -> {
