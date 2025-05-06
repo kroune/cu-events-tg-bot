@@ -1,4 +1,5 @@
 import ConfigurationLoader.currentConfig
+import controllers.EventsTextBuilderController
 import data.local.events.EventsRepositoryImpl
 import data.local.users.UsersRepositoryImpl
 import data.local.usersEvents.UsersEventsRepositoryImpl
@@ -52,54 +53,36 @@ fun main() {
                 val usersEventsRepository by inject<UsersEventsRepositoryImpl>()
                 val usersRepository by inject<UsersRepositoryImpl>()
                 val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+                val eventsTextBuilderController by inject<EventsTextBuilderController>()
                 eventsRemoteRepository.listenForEvents().collect {
                     val currentEvents = it.items
                     usersRepository.usersWithEnabledNotifications().forEach { userId ->
-                        val pastUserEvents = usersEventsRepository.getEventsByUserId(userId)
-                        val newEvents = currentEvents.filter { event -> event.id !in pastUserEvents }
-                        if (newEvents.isEmpty())
-                            return@collect
-                        val message = buildString {
-                            appendLine("Появились новые события")
+                        // async sending to make it faster
+                        launch {
+                            val pastUserEvents = usersEventsRepository.getEventsByUserId(userId)
+                            val newEvents = currentEvents.filter { event -> event.id !in pastUserEvents }
+                            if (newEvents.isEmpty())
+                                return@launch
+                            val message = buildString {
+                                appendLine("Появились новые события")
+                                newEvents.forEach { event ->
+                                    appendLine()
+                                    appendLine(
+                                        eventsTextBuilderController.constructEventInfo(event)
+                                    )
+                                }
+                            }
+                            alertsRemoteRepository.alert(
+                                userId,
+                                message
+                            )
                             newEvents.forEach { event ->
-                                appendLine()
-                                appendLine(event.shortTitle)
-                                appendLine("https://my.centraluniversity.ru/events/${event.slug}")
-                                appendLine(event.summary)
-                                appendLine(
-                                    when (event.offlineTicketLimit) {
-                                        null -> {
-                                            "колличество билетов не ограниченно"
-                                        }
-                                        else -> {
-                                            "всего билетов - ${event.offlineTicketLimit}"
-                                        }
-                                    }
-                                )
-
-                                appendLine(
-                                    when (event.eventTicketRegistration.isPossibleToRegister) {
-                                        true -> {
-                                            "вы еще можете зарегестрироваться"
-                                        }
-
-                                        false -> {
-                                            "к сожалению регистрация не доступна"
-                                        }
-                                    }
-                                )
+                                val eventExists = eventsRepository.getEventByEventId(event.id) != null
+                                if (!eventExists) {
+                                    eventsRepository.addEvent(event)
+                                }
+                                usersEventsRepository.addEventToUser(userId, event.id)
                             }
-                        }
-                        alertsRemoteRepository.alert(
-                            userId,
-                            message
-                        )
-                        newEvents.forEach { event ->
-                            val eventExists = eventsRepository.getEventByEventId(event.id) != null
-                            if (!eventExists) {
-                                eventsRepository.addEvent(event)
-                            }
-                            usersEventsRepository.addEventToUser(userId, event.id)
                         }
                     }
                 }

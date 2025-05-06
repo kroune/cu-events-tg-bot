@@ -2,6 +2,7 @@ package di
 
 import ConfigurationLoader
 import ch.qos.logback.classic.Logger
+import controllers.EventsTextBuilderController
 import controllers.UserController
 import data.local.events.EventsRepositoryImpl
 import data.local.users.UsersRepositoryImpl
@@ -33,6 +34,7 @@ val mainModule = module {
     single { EventsRemoteRepository() }
     single { AlertsRemoteRepository() }
     single { UserController() }
+    single { EventsTextBuilderController() }
     single {
         HttpClient {
             install(ContentNegotiation) {
