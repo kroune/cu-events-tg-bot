@@ -100,7 +100,7 @@ fun Application.applyPlugins() {
         basic("prometheus") {
             realm = "Access to the '/metrics' path"
             validate { credentials ->
-                with(currentConfig.grafanaConfig) {
+                with(currentConfig.prometheusScraperConfig) {
                     return@validate credentials.name == nameForScrape && credentials.password == passwordForScrape
                 }
             }

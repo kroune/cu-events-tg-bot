@@ -6,7 +6,7 @@ object ConfigurationLoader {
     @Serializable
     data class ConfigMember(
         val serverConfig: ServerConfig,
-        val grafanaConfig: GrafanaConfig,
+        val prometheusScraperConfig: PrometheusScraperConfig,
         val botToken: String,
         val authCookie: String,
         val databasesConfig: DatabasesConfig
@@ -25,7 +25,7 @@ object ConfigurationLoader {
     )
 
     @Serializable
-    class GrafanaConfig(
+    class PrometheusScraperConfig(
         val nameForScrape: String,
         val passwordForScrape: String,
     )
