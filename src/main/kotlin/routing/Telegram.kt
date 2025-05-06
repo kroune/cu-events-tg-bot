@@ -10,8 +10,6 @@ import eu.vendeli.tgbot.annotations.CommandHandler
 import eu.vendeli.tgbot.api.message.sendMessage
 import eu.vendeli.tgbot.types.User
 import inject
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
@@ -52,11 +50,21 @@ suspend fun disable(user: User, bot: TelegramBot) {
 @CommandHandler(["/events"])
 suspend fun events(user: User, bot: TelegramBot) {
     val eventsRemoteRepository by inject<EventsRemoteRepository>()
-    val event = withTimeoutOrNull(10.seconds) {
-        eventsRemoteRepository.listenForEvents(0.seconds).take(1).single()
-    }?.items?.firstOrNull()
-    if (event == null) {
-        val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    val events = withTimeoutOrNull(10.seconds) {
+        eventsRemoteRepository.getEvents()
+    }?.getOrElse {
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            "произошла ошибка при запросе данных"
+        )
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            it.stackTraceToString()
+        )
+        null
+    }?.items
+    if (events == null) {
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
             text = "достингут timeout при отправке уведомления",
@@ -65,12 +73,17 @@ suspend fun events(user: User, bot: TelegramBot) {
     val eventsTextBuilderController by inject<EventsTextBuilderController>()
     sendMessage {
         buildString {
-            when (event) {
+            when (events) {
                 null -> {
                     "произошла ошибка при получение информации (разраб уже уведомлен)"
                 }
                 else -> {
-                    eventsTextBuilderController.constructEventInfo(event)
+                    events.forEach { event ->
+                        appendLine()
+                        appendLine(
+                            eventsTextBuilderController.constructEventInfo(event)
+                        )
+                    }
                 }
             }
         }
