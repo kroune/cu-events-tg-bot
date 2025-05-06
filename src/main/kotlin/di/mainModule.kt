@@ -10,6 +10,8 @@ import data.local.usersEvents.UsersEventsRepositoryImpl
 import data.remote.alerts.AlertsRemoteRepository
 import data.remote.events.EventsRemoteRepository
 import eu.vendeli.tgbot.TelegramBot
+import eu.vendeli.tgbot.types.component.HttpLogLevel
+import eu.vendeli.tgbot.types.component.LogLvl
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -21,7 +23,12 @@ import org.koin.dsl.module
 val mainModule = module {
     single { KotlinLogging.logger(Logger.ROOT_LOGGER_NAME) }
     single {
-        TelegramBot(get<ConfigurationLoader.ConfigMember>().botToken)
+        TelegramBot(get<ConfigurationLoader.ConfigMember>().botToken) {
+            logging {
+                httpLogLevel = HttpLogLevel.NONE
+                botLogLevel = LogLvl.ALL
+            }
+        }
     }
     single {
         Json {

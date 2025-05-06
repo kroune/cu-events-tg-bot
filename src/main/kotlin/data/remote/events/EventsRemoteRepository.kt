@@ -3,6 +3,7 @@ package data.remote.events
 import ADMIN_USER_ID
 import ConfigurationLoader
 import data.remote.alerts.AlertsRemoteRepository
+import globalLogger
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -11,18 +12,14 @@ import io.ktor.http.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import kotlin.time.Clock
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 class EventsRemoteRepository : KoinComponent {
     private val url = URLBuilder(
@@ -33,11 +30,7 @@ class EventsRemoteRepository : KoinComponent {
 
     @OptIn(ExperimentalTime::class)
     suspend fun getEvents(): Result<Response> {
-        val moscowTimeZone: TimeZone = TimeZone.Companion.of("Europe/Moscow")
-        val instant: Instant = Clock.System.now()
-        val date: LocalDateTime = instant.toLocalDateTime(timeZone = moscowTimeZone)
-        println(date.format(LocalDateTime.Formats.ISO))
-
+        val timeAsString = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
         return runCatching {
             val client by inject<HttpClient>()
             val config by inject<ConfigurationLoader.ConfigMember>()
@@ -48,11 +41,13 @@ class EventsRemoteRepository : KoinComponent {
                     config.authCookie
                 )
                 setBody(
-                    "{\"paging\":{\"limit\":100,\"offset\":0,\"sorting\":[{\"by\":\"startDate\",\"isAsc\":true}]},\"filter\":{\"showOnlyMine\":false,\"endDateGreaterThanOrEqualTo\":\"2025-04-30T14:33:12.569Z\"}}"
+                    """{"paging":{"limit":100,"offset":0,"sorting":[{"by":"startDate","isAsc":true}]},"filter":{"showOnlyMine":false,"endDateGreaterThanOrEqualTo":"$timeAsString"}}"""
                 )
             }
-            println(request.headers)
-            println(request.bodyAsText())
+            val content = request.bodyAsText()
+            globalLogger.debug {
+                content
+            }
             request.body<Response>()
         }
     }
