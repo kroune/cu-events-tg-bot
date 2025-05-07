@@ -24,10 +24,10 @@
     <root level="all">
         <appender-ref ref="LOKI" />
     </root>
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="STDOUT"/>
     </root>
-    <logger name="org.eclipse.jetty" level="INFO"/>
+    <logger name="org.eclipse.jetty" level="ALL"/>
     <logger name="eu.vendeli.tgbot.core.TgUpdateHandler" level="ALL"/>
     <logger name="io.netty" level="INFO"/>
 </configuration>
