@@ -56,7 +56,7 @@ class EventsRemoteRepository : KoinComponent {
     }
 
     fun listenForEvents(
-        delay: Duration = 5.seconds
+        delay: Duration = 2.seconds
     ): Flow<Response> {
         return flow {
             val alertsRemoteRepository by inject<AlertsRemoteRepository>()
