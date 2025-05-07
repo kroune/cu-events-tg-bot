@@ -48,7 +48,10 @@ class EventsRemoteRepository : KoinComponent {
             globalLogger.debug {
                 content
             }
-            request.body<Response>()
+            val result = request.body<Response>()
+            // they return 200 and empty list if cookie is invalid, only way to know that cookie is still valid
+            assert(result.items.isNotEmpty())
+            result
         }
     }
 
