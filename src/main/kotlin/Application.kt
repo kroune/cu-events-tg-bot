@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,7 +28,22 @@ import org.koin.ktor.plugin.Koin
 import routing.misc.miscRouting
 import routing.monitoring.monitoringRouting
 
-private val scope = CoroutineScope(Dispatchers.IO)
+private val errorLogger = CoroutineExceptionHandler { context, exception ->
+    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    normalScope.launch {
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            "произошла ошибка критическая ошибка"
+        )
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            exception.stackTraceToString()
+        )
+    }
+}
+
+private val scope = CoroutineScope(Dispatchers.IO + errorLogger)
+private val normalScope = CoroutineScope(Dispatchers.IO)
 
 fun main() {
     val serverConfig = currentConfig.serverConfig
