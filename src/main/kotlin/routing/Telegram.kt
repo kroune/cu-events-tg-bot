@@ -71,21 +71,16 @@ suspend fun events(user: User, bot: TelegramBot) {
         )
     }
     val eventsTextBuilderController by inject<EventsTextBuilderController>()
-    sendMessage {
-        buildString {
-            when (events) {
-                null -> {
-                    "произошла ошибка при получение информации (разраб уже уведомлен)"
-                }
-                else -> {
-                    events.forEach { event ->
-                        appendLine()
-                        appendLine(
-                            eventsTextBuilderController.constructEventInfo(event)
-                        )
-                    }
-                }
+
+    when (events) {
+        null -> {
+            "произошла ошибка при получение информации (разраб уже уведомлен)"
+        }
+        else -> {
+            events.forEach { event ->
+                val message = eventsTextBuilderController.constructEventInfo(event)
+                sendMessage { message }.send(user, bot)
             }
         }
-    }.send(user, bot)
+    }
 }

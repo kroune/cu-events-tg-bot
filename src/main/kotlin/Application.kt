@@ -22,18 +22,19 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 import org.koin.ktor.plugin.Koin
 import routing.misc.miscRouting
 import routing.monitoring.monitoringRouting
 
-private val errorLogger = CoroutineExceptionHandler { context, exception ->
+private val criticalErrorLogger = CoroutineExceptionHandler { context, exception ->
     val alertsRemoteRepository by inject<AlertsRemoteRepository>()
     normalScope.launch {
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
-            "произошла ошибка критическая ошибка"
+            "произошла критическая ошибка"
         )
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
@@ -42,7 +43,22 @@ private val errorLogger = CoroutineExceptionHandler { context, exception ->
     }
 }
 
-private val scope = CoroutineScope(Dispatchers.IO + errorLogger)
+private val errorLogger = CoroutineExceptionHandler { context, exception ->
+    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    normalScope.launch {
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            "произошла ошибка"
+        )
+        alertsRemoteRepository.alert(
+            ADMIN_USER_ID,
+            exception.stackTraceToString()
+        )
+    }
+}
+
+private val scope = CoroutineScope(Dispatchers.IO + criticalErrorLogger)
+private val failSaveScope = CoroutineScope(Dispatchers.IO + SupervisorJob() + errorLogger)
 private val normalScope = CoroutineScope(Dispatchers.IO)
 
 fun main() {
@@ -74,24 +90,23 @@ fun main() {
                     val currentEvents = it.items
                     usersRepository.usersWithEnabledNotifications().forEach { userId ->
                         // async sending to make it faster
-                        launch {
+                        failSaveScope.launch {
                             val pastUserEvents = usersEventsRepository.getEventsByUserId(userId)
                             val newEvents = currentEvents.filter { event -> event.id !in pastUserEvents }
                             if (newEvents.isEmpty())
                                 return@launch
-                            val message = buildString {
-                                appendLine("Появились новые события")
+                            val messages = buildList {
+                                add("Появились новые события")
                                 newEvents.forEach { event ->
-                                    appendLine()
-                                    appendLine(
-                                        eventsTextBuilderController.constructEventInfo(event)
-                                    )
+                                    add(eventsTextBuilderController.constructEventInfo(event))
                                 }
                             }
-                            alertsRemoteRepository.alert(
-                                userId,
-                                message
-                            )
+                            messages.forEach { message ->
+                                alertsRemoteRepository.alert(
+                                    userId,
+                                    message
+                                )
+                            }
                             newEvents.forEach { event ->
                                 val eventExists = eventsRepository.getEventByEventId(event.id) != null
                                 if (!eventExists) {
