@@ -18,9 +18,9 @@ class EventsRepositoryImpl(
         }
     }
 
-    suspend fun getEventByEventId(id: Long): Event? {
+    suspend fun getEventByEventSlug(slug: String): Event? {
         return newSuspendedTransaction(db = database) {
-            EventsTable.selectAll().where { EventsTable.eventId eq id }.map {
+            EventsTable.selectAll().where { EventsTable.slug eq slug }.map {
                 Event(
                     id = it[EventsTable.eventId],
                     slug = it[EventsTable.slug],
@@ -40,7 +40,7 @@ class EventsRepositoryImpl(
     }
 
     suspend fun addEvent(event: Event) {
-        newSuspendedTransaction(db = database) {
+        newSuspendedTransaction(db = database, transactionIsolation = 2) {
             EventsTable.insert {
                 it[EventsTable.eventId] = event.id
                 it[EventsTable.slug] = event.slug

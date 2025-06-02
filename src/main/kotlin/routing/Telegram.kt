@@ -67,7 +67,7 @@ suspend fun events(user: User, bot: TelegramBot) {
     if (events == null) {
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
-            text = "достингут timeout при отправке уведомления",
+            text = "достигнут timeout при отправке уведомления",
         )
     }
     val eventsTextBuilderController by inject<EventsTextBuilderController>()

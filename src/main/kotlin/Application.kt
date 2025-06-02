@@ -28,6 +28,7 @@ import org.koin.core.context.GlobalContext
 import org.koin.ktor.plugin.Koin
 import routing.misc.miscRouting
 import routing.monitoring.monitoringRouting
+import kotlin.system.exitProcess
 
 private val criticalErrorLogger = CoroutineExceptionHandler { context, exception ->
     val alertsRemoteRepository by inject<AlertsRemoteRepository>()
@@ -40,6 +41,8 @@ private val criticalErrorLogger = CoroutineExceptionHandler { context, exception
             ADMIN_USER_ID,
             exception.stackTraceToString()
         )
+        // we are dead
+        exitProcess(1)
     }
 }
 
@@ -108,7 +111,7 @@ fun main() {
                                 )
                             }
                             newEvents.forEach { event ->
-                                val eventExists = eventsRepository.getEventByEventId(event.id) != null
+                                val eventExists = eventsRepository.getEventByEventSlug(event.slug) != null
                                 if (!eventExists) {
                                     eventsRepository.addEvent(event)
                                 }
@@ -119,7 +122,14 @@ fun main() {
                 }
             }
             scope.launch {
-                get<TelegramBot>().handleUpdates()
+                while (true) {
+                    runCatching {
+                        get<TelegramBot>().handleUpdates()
+                    }.onFailure {
+                        get<TelegramBot>().update.stopListener()
+                        logger.error(it) { "error during listening for updates" }
+                    }
+                }
             }
         }
     ).start(wait = true)
