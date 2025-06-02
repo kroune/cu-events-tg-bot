@@ -14,6 +14,6 @@ class AlertsRemoteRepository : KoinComponent {
         globalLogger.debug {
             "sending alert: $userId, $text"
         }
-//        sendMessage { text }.send(userId, get<TelegramBot>())
+        sendMessage { text }.send(userId, get<TelegramBot>())
     }
 }
