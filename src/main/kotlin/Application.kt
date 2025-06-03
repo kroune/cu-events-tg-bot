@@ -19,11 +19,7 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.koin.core.context.GlobalContext
 import org.koin.ktor.plugin.Koin
 import routing.misc.miscRouting
@@ -31,7 +27,7 @@ import routing.monitoring.monitoringRouting
 import kotlin.system.exitProcess
 
 private val criticalErrorLogger = CoroutineExceptionHandler { context, exception ->
-    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    val alertsRemoteRepository = get<AlertsRemoteRepository>()
     normalScope.launch {
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
@@ -47,7 +43,7 @@ private val criticalErrorLogger = CoroutineExceptionHandler { context, exception
 }
 
 private val errorLogger = CoroutineExceptionHandler { context, exception ->
-    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
+    val alertsRemoteRepository = get<AlertsRemoteRepository>()
     normalScope.launch {
         alertsRemoteRepository.alert(
             ADMIN_USER_ID,
@@ -83,18 +79,36 @@ fun main() {
             installMonitoring()
             routing()
             scope.launch {
-                val eventsRemoteRepository by inject<EventsRemoteRepository>()
-                val eventsRepository by inject<EventsRepositoryImpl>()
-                val usersEventsRepository by inject<UsersEventsRepositoryImpl>()
-                val usersRepository by inject<UsersRepositoryImpl>()
-                val alertsRemoteRepository by inject<AlertsRemoteRepository>()
-                val eventsTextBuilderController by inject<EventsTextBuilderController>()
+                val eventsRemoteRepository = get<EventsRemoteRepository>()
+                val eventsRepository = get<EventsRepositoryImpl>()
+                val usersEventsRepository = get<UsersEventsRepositoryImpl>()
+                val usersRepository = get<UsersRepositoryImpl>()
+                val alertsRemoteRepository = get<AlertsRemoteRepository>()
+                val eventsTextBuilderController = get<EventsTextBuilderController>()
                 eventsRemoteRepository.listenForEvents().collect {
                     val currentEvents = it.items
-                    usersRepository.usersWithEnabledNotifications().forEach { userId ->
+                    val usersWithEnabledNotifications =
+                        retryable({ usersRepository.usersWithEnabledNotifications(failSaveScope.coroutineContext) }) { error ->
+                            logger.warn(error) { "unable to get users with enabled notifications" }
+                        }.getOrElse { error ->
+                            logger.error(error) { "unable to get users with enabled notifications after retries" }
+                            return@collect
+                        }
+                    usersWithEnabledNotifications.forEach { userId ->
                         // async sending to make it faster
                         failSaveScope.launch {
-                            val pastUserEvents = usersEventsRepository.getEventsByUserId(userId)
+                            val pastUserEvents = retryable(
+                                {
+                                    usersEventsRepository.getEventsByUserId(
+                                        userId
+                                    )
+                                }
+                            ) { exception ->
+                                logger.warn(exception) { "unable to retrieve user events for $userId" }
+                            }.getOrElse { exception ->
+                                logger.error(exception) { "unable to retrieve user events after retries $userId" }
+                                return@launch
+                            }
                             val newEvents = currentEvents.filter { event -> event.id !in pastUserEvents }
                             if (newEvents.isEmpty())
                                 return@launch
@@ -122,7 +136,7 @@ fun main() {
                 }
             }
             scope.launch {
-                while (true) {
+                while (isActive) {
                     runCatching {
                         get<TelegramBot>().handleUpdates()
                     }.onFailure {

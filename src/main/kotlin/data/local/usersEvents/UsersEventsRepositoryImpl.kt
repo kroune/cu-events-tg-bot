@@ -14,10 +14,12 @@ class UsersEventsRepositoryImpl(val database: Database) {
         }
     }
 
-    suspend fun getEventsByUserId(id: Long): List<Long> {
-        return newSuspendedTransaction(db = database) {
-            UsersEventsTable.selectAll().where { UsersEventsTable.userId eq id }.map {
-                it[UsersEventsTable.eventId]
+    suspend fun getEventsByUserId(id: Long): Result<List<Long>> {
+        return runCatching {
+            newSuspendedTransaction(db = database) {
+                UsersEventsTable.selectAll().where { UsersEventsTable.userId eq id }.map {
+                    it[UsersEventsTable.eventId]
+                }
             }
         }
     }
@@ -25,11 +27,13 @@ class UsersEventsRepositoryImpl(val database: Database) {
     suspend fun addEventToUser(
         userId: Long,
         eventId: Long
-    ) {
-        newSuspendedTransaction(db = database) {
-            UsersEventsTable.insert {
-                it[UsersEventsTable.userId] = userId
-                it[UsersEventsTable.eventId] = eventId
+    ): Result<Unit> {
+        return runCatching {
+            newSuspendedTransaction(db = database) {
+                UsersEventsTable.insert {
+                    it[UsersEventsTable.userId] = userId
+                    it[UsersEventsTable.eventId] = eventId
+                }
             }
         }
     }

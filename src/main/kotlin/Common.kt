@@ -1,7 +1,6 @@
 import io.github.oshai.kotlinlogging.KLogger
-import io.ktor.server.application.Application
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.Routing
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import org.koin.core.context.GlobalContext
 import org.koin.core.parameter.ParametersDefinition
 import org.koin.core.qualifier.Qualifier
@@ -40,3 +39,21 @@ val Route.logger: KLogger
 
 val Application.logger: KLogger
     get() = inject<KLogger>().value
+
+inline fun <T> retryable(lambda: () -> Result<T>, retries: Int = 5, onFailure: (Throwable) -> Unit): Result<T> {
+    require(retries >= 0) { "retries must be >= 0" }
+    var lastError: Throwable = IllegalStateException("this should never happen")
+    repeat(1 + retries) {
+        val result = lambda()
+        result.fold(
+            onSuccess = {
+                return result
+            },
+            onFailure = {
+                lastError = it
+                onFailure(it)
+            }
+        )
+    }
+    return Result.failure(lastError)
+}

@@ -3,6 +3,7 @@ package data.local.users
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlin.coroutines.CoroutineContext
 
 class UsersRepositoryImpl(val database: Database) {
     init {
@@ -11,10 +12,12 @@ class UsersRepositoryImpl(val database: Database) {
         }
     }
 
-    suspend fun usersWithEnabledNotifications(): List<Long> {
-        return newSuspendedTransaction(db = database) {
-            UsersTable.selectAll().where { UsersTable.shouldNotify eq true }.map {
-                it[UsersTable.userId]
+    suspend fun usersWithEnabledNotifications(coroutineContext: CoroutineContext? = null): Result<List<Long>> {
+        return runCatching {
+            newSuspendedTransaction(coroutineContext, db = database) {
+                UsersTable.selectAll().where { UsersTable.shouldNotify eq true }.map {
+                    it[UsersTable.userId]
+                }
             }
         }
     }
