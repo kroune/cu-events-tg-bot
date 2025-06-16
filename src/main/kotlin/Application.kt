@@ -144,6 +144,7 @@ fun main() {
                         logger.error(it) { "error during listening for updates" }
                     }
                 }
+                logger.error { "scope was cancelled" }
             }
         }
     ).start(wait = true)
