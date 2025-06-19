@@ -19,6 +19,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Database
 import org.koin.dsl.module
+import services.EventNotificationsService
 
 val mainModule = module {
     single { KotlinLogging.logger(Logger.ROOT_LOGGER_NAME) }
@@ -42,6 +43,16 @@ val mainModule = module {
     single { AlertsRemoteRepository() }
     single { UserController() }
     single { EventsTextBuilderController() }
+    single {
+        EventNotificationsService(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     single {
         HttpClient {
             install(ContentNegotiation) {
