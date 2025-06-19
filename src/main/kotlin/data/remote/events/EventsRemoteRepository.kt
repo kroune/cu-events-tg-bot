@@ -1,8 +1,6 @@
 package data.remote.events
 
-import ADMIN_USER_ID
 import ConfigurationLoader
-import data.remote.alerts.AlertsRemoteRepository
 import globalLogger
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -13,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
+import logger
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.time.Instant
@@ -59,21 +58,14 @@ class EventsRemoteRepository : KoinComponent {
         delay: Duration = 2.seconds
     ): Flow<Response> {
         return flow {
-            val alertsRemoteRepository by inject<AlertsRemoteRepository>()
             while (true) {
                 getEvents().fold(
                     onSuccess = {
                         emit(it)
                     },
                     onFailure = {
-                        alertsRemoteRepository.alert(
-                            ADMIN_USER_ID,
-                            "произошла ошибка при запросе данных"
-                        )
-                        alertsRemoteRepository.alert(
-                            ADMIN_USER_ID,
-                            it.stackTraceToString()
-                        )
+                        // TODO: possible refactor to use markers
+                        logger.warn(throwable = it) { "произошла ошибка при запросе данных" }
                     }
                 )
                 delay(delay)

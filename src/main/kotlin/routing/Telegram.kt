@@ -1,14 +1,13 @@
 package routing
 
-import ADMIN_USER_ID
 import controllers.EventsTextBuilderController
 import controllers.UserController
-import data.remote.alerts.AlertsRemoteRepository
 import data.remote.events.EventsRemoteRepository
 import eu.vendeli.tgbot.TelegramBot
 import eu.vendeli.tgbot.annotations.CommandHandler
 import eu.vendeli.tgbot.api.message.sendMessage
 import eu.vendeli.tgbot.types.User
+import globalLogger
 import inject
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
@@ -50,25 +49,14 @@ suspend fun disable(user: User, bot: TelegramBot) {
 @CommandHandler(["/events"])
 suspend fun events(user: User, bot: TelegramBot) {
     val eventsRemoteRepository by inject<EventsRemoteRepository>()
-    val alertsRemoteRepository by inject<AlertsRemoteRepository>()
     val events = withTimeoutOrNull(10.seconds) {
-        eventsRemoteRepository.getEvents()
-    }?.getOrElse {
-        alertsRemoteRepository.alert(
-            ADMIN_USER_ID,
-            "произошла ошибка при запросе данных"
-        )
-        alertsRemoteRepository.alert(
-            ADMIN_USER_ID,
-            it.stackTraceToString()
-        )
-        null
+        eventsRemoteRepository.getEvents().getOrElse {
+            globalLogger.error(it) { "произошла ошибка при запросе данных" }
+            null
+        }
     }?.items
     if (events == null) {
-        alertsRemoteRepository.alert(
-            ADMIN_USER_ID,
-            text = "достигнут timeout при отправке уведомления",
-        )
+        globalLogger.error { "достигнут timeout при отправке уведомления" }
     }
     val eventsTextBuilderController by inject<EventsTextBuilderController>()
 
