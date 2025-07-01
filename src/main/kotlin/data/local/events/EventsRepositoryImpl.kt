@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.sql.Connection
 
 class EventsRepositoryImpl(
     private val database: Database
@@ -40,7 +41,7 @@ class EventsRepositoryImpl(
     }
 
     suspend fun addEvent(event: Event) {
-        newSuspendedTransaction(db = database, transactionIsolation = 2) {
+        newSuspendedTransaction(db = database, transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ) {
             EventsTable.insert {
                 it[EventsTable.eventId] = event.id
                 it[EventsTable.slug] = event.slug

@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.sql.Connection
 
 class UsersEventsRepositoryImpl(val database: Database) {
     init {
@@ -29,7 +30,7 @@ class UsersEventsRepositoryImpl(val database: Database) {
         eventId: Long
     ): Result<Unit> {
         return runCatching {
-            newSuspendedTransaction(db = database) {
+            newSuspendedTransaction(db = database, transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ) {
                 UsersEventsTable.insert {
                     it[UsersEventsTable.userId] = userId
                     it[UsersEventsTable.eventId] = eventId
