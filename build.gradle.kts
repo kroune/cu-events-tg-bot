@@ -1,10 +1,10 @@
 plugins {
     alias(libs.plugins.ktor)
     application
-    kotlin("jvm") version "2.1.20"
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
-    id("com.google.devtools.ksp") version "2.1.20-2.0.0"
-    id("eu.vendeli.telegram-bot") version "8.1.0"
+    id("com.google.devtools.ksp") version "2.2.0-2.0.2"
+    id("eu.vendeli.telegram-bot") version "8.2.0"
 }
 
 group = "io.github.kroune"
