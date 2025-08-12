@@ -26,7 +26,7 @@ val mainModule = module {
     single {
         TelegramBot(get<ConfigurationLoader.ConfigMember>().botToken) {
             logging {
-                httpLogLevel = HttpLogLevel.NONE
+                httpLogLevel = HttpLogLevel.INFO
                 botLogLevel = LogLvl.ALL
             }
         }

@@ -19,13 +19,11 @@ import org.koin.ktor.plugin.Koin
 import routing.misc.miscRouting
 import routing.monitoring.monitoringRouting
 import services.EventNotificationsService
-import kotlin.system.exitProcess
 
 private val criticalErrorLogger = CoroutineExceptionHandler { context, exception ->
     normalScope.launch {
         globalLogger.error(exception) { "произошла критическая ошибка" }
         // we are dead
-        exitProcess(1)
     }
 }
 
